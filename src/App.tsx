@@ -7,6 +7,10 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ClerkLoaded, ClerkLoading, SignedIn } from '@clerk/clerk-react';
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
+import PromptHistory from "./pages/PromptHistory";
+import Collections from "./pages/Collections";
+import Marketplace from "./pages/Marketplace";
+import Explore from "./pages/Explore";
 import NotFound from "./pages/NotFound";
 import Navbar from "./components/Navbar";
 
@@ -33,6 +37,34 @@ const App = () => (
                 <SignedIn>
                   <Dashboard />
                 </SignedIn>
+              } 
+            />
+            <Route 
+              path="/history" 
+              element={
+                <SignedIn>
+                  <PromptHistory />
+                </SignedIn>
+              } 
+            />
+            <Route 
+              path="/collections" 
+              element={
+                <SignedIn>
+                  <Collections />
+                </SignedIn>
+              } 
+            />
+            <Route 
+              path="/marketplace" 
+              element={
+                <Marketplace />
+              } 
+            />
+            <Route 
+              path="/explore" 
+              element={
+                <Explore />
               } 
             />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

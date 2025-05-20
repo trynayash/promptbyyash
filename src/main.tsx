@@ -11,7 +11,17 @@ if (!PUBLISHABLE_KEY) {
 }
 
 createRoot(document.getElementById("root")!).render(
-  <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
+  <ClerkProvider 
+    publishableKey={PUBLISHABLE_KEY}
+    appearance={{
+      elements: {
+        formButtonPrimary: 
+          "bg-promptp-purple hover:bg-promptp-deep-purple text-sm normal-case",
+        footerActionLink: "text-promptp-purple hover:text-promptp-deep-purple",
+        card: "rounded-xl shadow-md",
+      },
+    }}
+  >
     <App />
   </ClerkProvider>
 );
