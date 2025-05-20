@@ -2,10 +2,12 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu } from "lucide-react";
+import { SignInButton, SignUpButton, UserButton, SignedIn, SignedOut, useAuth } from "@clerk/clerk-react";
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { isSignedIn } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -44,12 +46,21 @@ const Navbar = () => {
         </nav>
 
         <div className="hidden md:flex items-center space-x-4">
-          <Button variant="ghost" className="text-gray-700 hover:text-promptp-purple">
-            Login
-          </Button>
-          <Button className="bg-promptp-purple hover:bg-promptp-purple/90 text-white">
-            Get Started
-          </Button>
+          <SignedOut>
+            <SignInButton>
+              <Button variant="ghost" className="text-gray-700 hover:text-promptp-purple">
+                Login
+              </Button>
+            </SignInButton>
+            <SignUpButton>
+              <Button className="bg-promptp-purple hover:bg-promptp-purple/90 text-white">
+                Get Started
+              </Button>
+            </SignUpButton>
+          </SignedOut>
+          <SignedIn>
+            <UserButton afterSignOutUrl="/" />
+          </SignedIn>
         </div>
 
         {/* Mobile Menu Button */}
@@ -89,12 +100,21 @@ const Navbar = () => {
               Pricing
             </a>
             <div className="pt-4 flex flex-col space-y-2">
-              <Button variant="ghost" className="w-full justify-center">
-                Login
-              </Button>
-              <Button className="w-full bg-promptp-purple hover:bg-promptp-purple/90 text-white">
-                Get Started
-              </Button>
+              <SignedOut>
+                <SignInButton>
+                  <Button variant="ghost" className="w-full justify-center">
+                    Login
+                  </Button>
+                </SignInButton>
+                <SignUpButton>
+                  <Button className="w-full bg-promptp-purple hover:bg-promptp-purple/90 text-white">
+                    Get Started
+                  </Button>
+                </SignUpButton>
+              </SignedOut>
+              <SignedIn>
+                <UserButton afterSignOutUrl="/" />
+              </SignedIn>
             </div>
           </nav>
         </div>
