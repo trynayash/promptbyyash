@@ -14,7 +14,7 @@ const AIContext = createContext<AIContextType | undefined>(undefined);
 export const AIProvider = ({ children }: { children: ReactNode }) => {
   const [activeModel, setActiveModel] = useState<AIModelConfig>(AI_MODELS[0]);
   
-  // In a real app, this would check if the API key is available in your backend
+  // API key is now hardcoded in the service
   const isApiKeySet = true;
 
   const value = {

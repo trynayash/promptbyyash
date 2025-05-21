@@ -20,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { enhancePrompt } from "@/services/aiService";
 import { useToast } from "@/hooks/use-toast";
+import { PromptType } from "@/types/ai";
 
 const Dashboard = () => {
   const { isSignedIn, isLoaded } = useAuth();
@@ -28,7 +29,7 @@ const Dashboard = () => {
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [enhancedPrompt, setEnhancedPrompt] = useState("");
-  const [promptType, setPromptType] = useState<"text" | "image" | "code" | "chat">("text");
+  const [promptType, setPromptType] = useState<PromptType>("text");
 
   const handleEnhancePrompt = async () => {
     if (!prompt.trim()) return;
@@ -38,7 +39,7 @@ const Dashboard = () => {
     try {
       // Only use AI service for text, image and code tabs
       if (promptType !== "chat") {
-        const result = await enhancePrompt(prompt, promptType === "chat" ? "text" : promptType);
+        const result = await enhancePrompt(prompt, promptType);
         
         if (result.error) {
           toast({
@@ -50,7 +51,7 @@ const Dashboard = () => {
           setEnhancedPrompt(result.enhancedPrompt);
           toast({
             title: "Prompt Enhanced",
-            description: "Your prompt was successfully enhanced using Gemini 2.5 Pro!",
+            description: "Your prompt was successfully enhanced using ChatGPT!",
             variant: "default"
           });
         }
@@ -179,7 +180,7 @@ const Dashboard = () => {
                 <CardTitle className="flex items-center">
                   Create Enhanced Prompts
                   <span className="ml-2 text-xs bg-promptp-purple/20 text-promptp-purple rounded-full px-3 py-1">
-                    Powered by Gemini 2.5 Pro
+                    Powered by ChatGPT
                   </span>
                 </CardTitle>
               </CardHeader>
@@ -188,7 +189,7 @@ const Dashboard = () => {
                   defaultValue="text" 
                   className="w-full"
                   value={promptType}
-                  onValueChange={(value) => setPromptType(value as "text" | "image" | "code" | "chat")}
+                  onValueChange={(value) => setPromptType(value as PromptType)}
                 >
                   <TabsList className="mb-4">
                     <TabsTrigger value="text">Text</TabsTrigger>
@@ -216,12 +217,12 @@ const Dashboard = () => {
                       {isGenerating ? (
                         <span className="flex items-center">
                           <span className="animate-spin mr-2">⚙️</span>
-                          Enhancing with Gemini...
+                          Enhancing with ChatGPT...
                         </span>
                       ) : (
                         <span className="flex items-center">
                           <Sparkles className="h-4 w-4 mr-2" />
-                          Enhance Prompt with Gemini
+                          Enhance Prompt with ChatGPT
                         </span>
                       )}
                     </Button>
@@ -287,7 +288,7 @@ const Dashboard = () => {
                       {isGenerating ? (
                         <span className="flex items-center">
                           <span className="animate-spin mr-2">⚙️</span>
-                          Enhancing with Gemini...
+                          Enhancing with ChatGPT...
                         </span>
                       ) : (
                         <span className="flex items-center">
@@ -358,7 +359,7 @@ const Dashboard = () => {
                       {isGenerating ? (
                         <span className="flex items-center">
                           <span className="animate-spin mr-2">⚙️</span>
-                          Enhancing with Gemini...
+                          Enhancing with ChatGPT...
                         </span>
                       ) : (
                         <span className="flex items-center">

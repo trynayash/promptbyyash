@@ -26,11 +26,11 @@ export interface AIModelConfig {
 
 export const AI_MODELS: AIModelConfig[] = [
   {
-    id: "gemini-2.5-pro",
-    name: "Google Gemini 2.5 Pro",
-    description: "High-performance multimodal model with strong reasoning capabilities",
+    id: "chatgpt",
+    name: "ChatGPT",
+    description: "OpenAI's powerful language model for natural text generation",
     capabilities: ["text", "image", "code"],
-    provider: "Google (via OpenRouter)",
+    provider: "OpenAI (via RapidAPI)",
     logoUrl: "/placeholder.svg"
   },
   {
