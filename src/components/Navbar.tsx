@@ -2,13 +2,31 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, BookOpen, Grid2x2, History, Search, Tag, Sparkles } from "lucide-react";
-import { SignInButton, SignUpButton, UserButton, SignedIn, SignedOut, useAuth } from "@clerk/clerk-react";
+import { 
+  Menu, 
+  BookOpen, 
+  Grid2x2, 
+  History, 
+  Search, 
+  Tag, 
+  Sparkles,
+  LogOut,
+  User
+} from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { isSignedIn } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -64,6 +82,16 @@ const Navbar = () => {
 
   const isActive = (path: string) => location.pathname === path;
 
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
+
+  // Get user initials for avatar fallback
+  const getUserInitials = () => {
+    return user?.email?.substring(0, 2).toUpperCase() || "U";
+  };
+
   return (
     <header
       className={`fixed w-full z-50 transition-all duration-300 ${
@@ -78,7 +106,7 @@ const Navbar = () => {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-1">
           {navItems.map((item) => {
-            if (!isSignedIn && !item.showWhenLoggedOut) return null;
+            if (!user && !item.showWhenLoggedOut) return null;
             
             return (
               <Button 
@@ -95,21 +123,45 @@ const Navbar = () => {
         </nav>
 
         <div className="hidden md:flex items-center space-x-4">
-          <SignedOut>
-            <SignInButton>
-              <Button variant="ghost" className="text-gray-700 hover:text-promptp-purple">
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Avatar className="cursor-pointer h-9 w-9">
+                  <AvatarImage src={user.user_metadata?.avatar_url} />
+                  <AvatarFallback className="bg-promptp-purple text-white">
+                    {getUserInitials()}
+                  </AvatarFallback>
+                </Avatar>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem className="cursor-pointer" onClick={() => navigate("/dashboard")}>
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Dashboard</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="cursor-pointer" onClick={handleSignOut}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Sign Out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <>
+              <Button 
+                variant="ghost" 
+                className="text-gray-700 hover:text-promptp-purple"
+                onClick={() => navigate("/auth")}
+              >
                 Login
               </Button>
-            </SignInButton>
-            <SignUpButton>
-              <Button className="bg-promptp-purple hover:bg-promptp-purple/90 text-white">
+              <Button 
+                className="bg-promptp-purple hover:bg-promptp-deep-purple text-white"
+                onClick={() => navigate("/auth?tab=signup")}
+              >
                 Get Started
               </Button>
-            </SignUpButton>
-          </SignedOut>
-          <SignedIn>
-            <UserButton afterSignOutUrl="/" />
-          </SignedIn>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -128,7 +180,7 @@ const Navbar = () => {
         <div className="md:hidden bg-white border-t p-4 shadow-lg">
           <nav className="flex flex-col space-y-4">
             {navItems.map((item) => {
-              if (!isSignedIn && !item.showWhenLoggedOut) return null;
+              if (!user && !item.showWhenLoggedOut) return null;
               
               return (
                 <Button 
@@ -146,23 +198,51 @@ const Navbar = () => {
               );
             })}
             <div className="pt-4 flex flex-col space-y-2">
-              <SignedOut>
-                <SignInButton>
-                  <Button variant="ghost" className="w-full justify-center">
+              {user ? (
+                <>
+                  <div className="flex items-center gap-3 p-2">
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={user.user_metadata?.avatar_url} />
+                      <AvatarFallback className="bg-promptp-purple text-white">
+                        {getUserInitials()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-sm font-medium">{user.email}</p>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    className="justify-start"
+                    onClick={handleSignOut}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign Out
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button 
+                    variant="ghost" 
+                    className="w-full justify-center"
+                    onClick={() => {
+                      navigate("/auth");
+                      setIsMenuOpen(false);
+                    }}
+                  >
                     Login
                   </Button>
-                </SignInButton>
-                <SignUpButton>
-                  <Button className="w-full bg-promptp-purple hover:bg-promptp-purple/90 text-white">
+                  <Button 
+                    className="w-full bg-promptp-purple hover:bg-promptp-purple/90 text-white"
+                    onClick={() => {
+                      navigate("/auth?tab=signup");
+                      setIsMenuOpen(false);
+                    }}
+                  >
                     Get Started
                   </Button>
-                </SignUpButton>
-              </SignedOut>
-              <SignedIn>
-                <div className="flex justify-center pt-2">
-                  <UserButton afterSignOutUrl="/" />
-                </div>
-              </SignedIn>
+                </>
+              )}
             </div>
           </nav>
         </div>
