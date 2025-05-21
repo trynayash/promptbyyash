@@ -20,43 +20,45 @@ export interface AIModelConfig {
   description: string;
   capabilities: string[];
   provider: string;
-  apiEndpoint?: string;
   logoUrl?: string;
   isLocal?: boolean;
 }
 
 export const AI_MODELS: AIModelConfig[] = [
   {
-    id: "local-smart-ai",
-    name: "Smart AI",
-    description: "Local AI enhancement with smart algorithms",
+    id: "promptp-smart-ai",
+    name: "PromptP Smart AI",
+    description: "Proprietary PromptP AI enhancement with smart algorithms",
     capabilities: ["text", "image", "code"],
     provider: "PromptP",
     logoUrl: "/placeholder.svg",
     isLocal: true
   },
   {
-    id: "chatgpt",
-    name: "ChatGPT",
-    description: "OpenAI's powerful language model for natural text generation",
+    id: "promptp-creative",
+    name: "PromptP Creative",
+    description: "Specialized AI model for creative content generation",
+    capabilities: ["text", "image"],
+    provider: "PromptP",
+    logoUrl: "/placeholder.svg",
+    isLocal: true
+  },
+  {
+    id: "promptp-technical",
+    name: "PromptP Technical",
+    description: "Specialized AI model for technical content and code generation",
+    capabilities: ["text", "code"],
+    provider: "PromptP",
+    logoUrl: "/placeholder.svg",
+    isLocal: true
+  },
+  {
+    id: "promptp-professional",
+    name: "PromptP Professional",
+    description: "Business-focused AI model for marketing and professional content",
     capabilities: ["text", "image", "code"],
-    provider: "OpenAI (via RapidAPI)",
-    logoUrl: "/placeholder.svg"
-  },
-  {
-    id: "gpt-4o",
-    name: "GPT-4o",
-    description: "Latest OpenAI model with excellent general performance",
-    capabilities: ["text", "image", "code", "chat"],
-    provider: "OpenAI",
-    logoUrl: "/placeholder.svg"
-  },
-  {
-    id: "claude-3-sonnet",
-    name: "Claude 3 Sonnet",
-    description: "Well-balanced AI model with strong reasoning",
-    capabilities: ["text", "code", "chat"],
-    provider: "Anthropic",
-    logoUrl: "/placeholder.svg"
+    provider: "PromptP",
+    logoUrl: "/placeholder.svg",
+    isLocal: true
   }
 ];

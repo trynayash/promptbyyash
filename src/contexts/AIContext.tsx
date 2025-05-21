@@ -1,12 +1,16 @@
 
 import { createContext, useContext, useState, ReactNode } from 'react';
 import { AIModelConfig, AI_MODELS } from '@/types/ai';
+import { PROMPT_CATEGORIES, PROMPT_TONES, PROMPT_FORMATS } from '@/services/promptPAIService';
 
 interface AIContextType {
   activeModel: AIModelConfig;
   availableModels: AIModelConfig[];
   setActiveModel: (model: AIModelConfig) => void;
-  isLocalAI: boolean; // New flag to indicate local AI usage
+  isLocalAI: boolean;
+  promptCategories: Record<string, string[]>;
+  promptTones: string[];
+  promptFormats: Record<string, string[]>;
 }
 
 const AIContext = createContext<AIContextType | undefined>(undefined);
@@ -14,14 +18,17 @@ const AIContext = createContext<AIContextType | undefined>(undefined);
 export const AIProvider = ({ children }: { children: ReactNode }) => {
   const [activeModel, setActiveModel] = useState<AIModelConfig>(AI_MODELS[0]);
   
-  // Using local AI implementation
+  // Always using our local proprietary AI implementation
   const isLocalAI = true;
 
   const value = {
     activeModel,
     availableModels: AI_MODELS,
     setActiveModel,
-    isLocalAI
+    isLocalAI,
+    promptCategories: PROMPT_CATEGORIES,
+    promptTones: PROMPT_TONES,
+    promptFormats: PROMPT_FORMATS
   };
 
   return <AIContext.Provider value={value}>{children}</AIContext.Provider>;
