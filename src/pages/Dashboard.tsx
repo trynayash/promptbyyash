@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@clerk/clerk-react";
@@ -19,34 +18,58 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { enhancePrompt } from "@/services/aiService";
+import { useToast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
   const { isSignedIn, isLoaded } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [enhancedPrompt, setEnhancedPrompt] = useState("");
+  const [promptType, setPromptType] = useState<"text" | "image" | "code" | "chat">("text");
 
-  const handleEnhancePrompt = () => {
+  const handleEnhancePrompt = async () => {
     if (!prompt.trim()) return;
     
     setIsGenerating(true);
     
-    // Simulate API call to enhance prompt
-    setTimeout(() => {
-      const basePrompt = prompt.trim();
-      let enhanced = basePrompt;
-      
-      // Very simple enhancement logic for demo purposes
-      if (basePrompt.toLowerCase().includes("image")) {
-        enhanced = `Create a highly detailed, cinematic ${basePrompt.replace("image", "").replace("of", "").trim()}, featuring intricate details, dramatic lighting, vibrant colors, ultra-high resolution, photorealistic style, 8k quality --ar 16:9 --v 5.1 --q 2 --style raw --stylize 1000`;
+    try {
+      // Only use AI service for text, image and code tabs
+      if (promptType !== "chat") {
+        const result = await enhancePrompt(prompt, promptType === "chat" ? "text" : promptType);
+        
+        if (result.error) {
+          toast({
+            title: "Enhancement Error",
+            description: result.error,
+            variant: "destructive"
+          });
+        } else {
+          setEnhancedPrompt(result.enhancedPrompt);
+          toast({
+            title: "Prompt Enhanced",
+            description: "Your prompt was successfully enhanced using Gemini 2.5 Pro!",
+            variant: "default"
+          });
+        }
       } else {
-        enhanced = `${basePrompt}\n\nProvide comprehensive, well-structured, and detailed information with specific examples where appropriate. Include relevant context, potential applications, and address potential limitations or considerations. Format the response with clear headings, bullet points for lists, and use concise paragraphs for easy readability.`;
+        // Fallback for chat tab which isn't implemented yet
+        const basePrompt = prompt.trim();
+        let enhanced = `${basePrompt}\n\nProvide comprehensive, well-structured, and detailed information with specific examples where appropriate. Include relevant context, potential applications, and address potential limitations or considerations. Format the response with clear headings, bullet points for lists, and use concise paragraphs for easy readability.`;
+        setEnhancedPrompt(enhanced);
       }
-      
-      setEnhancedPrompt(enhanced);
+    } catch (error) {
+      console.error("Error enhancing prompt:", error);
+      toast({
+        title: "Enhancement Error",
+        description: "There was an error enhancing your prompt. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
       setIsGenerating(false);
-    }, 1500);
+    }
   };
 
   if (!isLoaded || !isSignedIn) {
@@ -153,10 +176,20 @@ const Dashboard = () => {
           <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Create Enhanced Prompts</CardTitle>
+                <CardTitle className="flex items-center">
+                  Create Enhanced Prompts
+                  <span className="ml-2 text-xs bg-promptp-purple/20 text-promptp-purple rounded-full px-3 py-1">
+                    Powered by Gemini 2.5 Pro
+                  </span>
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <Tabs defaultValue="text" className="w-full">
+                <Tabs 
+                  defaultValue="text" 
+                  className="w-full"
+                  value={promptType}
+                  onValueChange={(value) => setPromptType(value as "text" | "image" | "code" | "chat")}
+                >
                   <TabsList className="mb-4">
                     <TabsTrigger value="text">Text</TabsTrigger>
                     <TabsTrigger value="image">Image</TabsTrigger>
@@ -183,12 +216,12 @@ const Dashboard = () => {
                       {isGenerating ? (
                         <span className="flex items-center">
                           <span className="animate-spin mr-2">⚙️</span>
-                          Enhancing...
+                          Enhancing with Gemini...
                         </span>
                       ) : (
                         <span className="flex items-center">
                           <Sparkles className="h-4 w-4 mr-2" />
-                          Enhance Prompt
+                          Enhance Prompt with Gemini
                         </span>
                       )}
                     </Button>
@@ -235,16 +268,146 @@ const Dashboard = () => {
                     )}
                   </TabsContent>
                   
-                  <TabsContent value="image">
-                    <div className="text-center py-10">
-                      <p className="text-gray-600">Image prompt enhancement coming soon!</p>
+                  <TabsContent value="image" className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium">Your Basic Prompt</label>
+                      <Textarea
+                        placeholder="Describe the image you want to generate..."
+                        className="min-h-[120px] resize-none mt-2"
+                        value={prompt}
+                        onChange={(e) => setPrompt(e.target.value)}
+                      />
                     </div>
+                    
+                    <Button 
+                      className="w-full bg-promptp-purple hover:bg-promptp-deep-purple"
+                      disabled={isGenerating || !prompt.trim()}
+                      onClick={handleEnhancePrompt}
+                    >
+                      {isGenerating ? (
+                        <span className="flex items-center">
+                          <span className="animate-spin mr-2">⚙️</span>
+                          Enhancing with Gemini...
+                        </span>
+                      ) : (
+                        <span className="flex items-center">
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          Enhance Image Prompt
+                        </span>
+                      )}
+                    </Button>
+                    
+                    {enhancedPrompt && (
+                      <div className="mt-6">
+                        <label className="text-sm font-medium">Enhanced Image Prompt</label>
+                        <div className="relative mt-2">
+                          <Textarea
+                            value={enhancedPrompt}
+                            readOnly
+                            className="min-h-[150px] resize-none bg-gray-50 border-promptp-purple/20"
+                          />
+                          <div className="absolute top-2 right-2 flex space-x-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => navigator.clipboard.writeText(enhancedPrompt)}
+                              className="text-xs bg-white/80 backdrop-blur-sm"
+                            >
+                              Copy
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="text-xs bg-white/80 backdrop-blur-sm"
+                            >
+                              Save
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-between mt-4">
+                          <Button variant="outline" size="sm" className="text-xs">
+                            <Lightbulb className="h-3 w-3 mr-1" />
+                            Suggest Improvements
+                          </Button>
+                          <Button variant="outline" size="sm" className="text-xs">
+                            <Plus className="h-3 w-3 mr-1" />
+                            Add to Collection
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </TabsContent>
                   
-                  <TabsContent value="code">
-                    <div className="text-center py-10">
-                      <p className="text-gray-600">Code prompt enhancement coming soon!</p>
+                  <TabsContent value="code" className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium">Your Basic Code Prompt</label>
+                      <Textarea
+                        placeholder="Describe the code you want to generate..."
+                        className="min-h-[120px] resize-none mt-2"
+                        value={prompt}
+                        onChange={(e) => setPrompt(e.target.value)}
+                      />
                     </div>
+                    
+                    <Button 
+                      className="w-full bg-promptp-purple hover:bg-promptp-deep-purple"
+                      disabled={isGenerating || !prompt.trim()}
+                      onClick={handleEnhancePrompt}
+                    >
+                      {isGenerating ? (
+                        <span className="flex items-center">
+                          <span className="animate-spin mr-2">⚙️</span>
+                          Enhancing with Gemini...
+                        </span>
+                      ) : (
+                        <span className="flex items-center">
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          Enhance Code Prompt
+                        </span>
+                      )}
+                    </Button>
+                    
+                    {enhancedPrompt && (
+                      <div className="mt-6">
+                        <label className="text-sm font-medium">Enhanced Code Prompt</label>
+                        <div className="relative mt-2">
+                          <Textarea
+                            value={enhancedPrompt}
+                            readOnly
+                            className="min-h-[150px] resize-none bg-gray-50 border-promptp-purple/20"
+                          />
+                          <div className="absolute top-2 right-2 flex space-x-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => navigator.clipboard.writeText(enhancedPrompt)}
+                              className="text-xs bg-white/80 backdrop-blur-sm"
+                            >
+                              Copy
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="text-xs bg-white/80 backdrop-blur-sm"
+                            >
+                              Save
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-between mt-4">
+                          <Button variant="outline" size="sm" className="text-xs">
+                            <Lightbulb className="h-3 w-3 mr-1" />
+                            Suggest Improvements
+                          </Button>
+                          <Button variant="outline" size="sm" className="text-xs">
+                            <Plus className="h-3 w-3 mr-1" />
+                            Add to Collection
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </TabsContent>
                   
                   <TabsContent value="chat">

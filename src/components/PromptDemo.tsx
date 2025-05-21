@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Copy, Wand } from "lucide-react";
 
 const PromptDemo = () => {
+  const navigate = useNavigate();
   const [demoType, setDemoType] = useState<"text" | "image" | "code">("image");
   const [isEnhancing, setIsEnhancing] = useState(false);
   
@@ -176,7 +178,7 @@ The function should follow modern JavaScript best practices and be usable in bot
                 if (isLoggedIn) {
                   navigate("/dashboard");
                 } else {
-                  // Handle sign up flow
+                  navigate("/"); // Navigate to home/sign up flow
                 }
               }}
             >
