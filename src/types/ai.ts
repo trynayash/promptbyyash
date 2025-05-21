@@ -22,9 +22,19 @@ export interface AIModelConfig {
   provider: string;
   apiEndpoint?: string;
   logoUrl?: string;
+  isLocal?: boolean;
 }
 
 export const AI_MODELS: AIModelConfig[] = [
+  {
+    id: "local-smart-ai",
+    name: "Smart AI",
+    description: "Local AI enhancement with smart algorithms",
+    capabilities: ["text", "image", "code"],
+    provider: "PromptP",
+    logoUrl: "/placeholder.svg",
+    isLocal: true
+  },
   {
     id: "chatgpt",
     name: "ChatGPT",

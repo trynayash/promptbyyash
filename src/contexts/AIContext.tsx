@@ -6,7 +6,7 @@ interface AIContextType {
   activeModel: AIModelConfig;
   availableModels: AIModelConfig[];
   setActiveModel: (model: AIModelConfig) => void;
-  isApiKeySet: boolean;
+  isLocalAI: boolean; // New flag to indicate local AI usage
 }
 
 const AIContext = createContext<AIContextType | undefined>(undefined);
@@ -14,14 +14,14 @@ const AIContext = createContext<AIContextType | undefined>(undefined);
 export const AIProvider = ({ children }: { children: ReactNode }) => {
   const [activeModel, setActiveModel] = useState<AIModelConfig>(AI_MODELS[0]);
   
-  // API key is now hardcoded in the service
-  const isApiKeySet = true;
+  // Using local AI implementation
+  const isLocalAI = true;
 
   const value = {
     activeModel,
     availableModels: AI_MODELS,
     setActiveModel,
-    isApiKeySet
+    isLocalAI
   };
 
   return <AIContext.Provider value={value}>{children}</AIContext.Provider>;

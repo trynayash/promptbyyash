@@ -12,24 +12,33 @@ import {
   Sparkles, 
   Star, 
   Tag,
-  TrendingUp
+  TrendingUp,
+  Wand
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { enhancePrompt } from "@/services/aiService";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { enhancePrompt, generateNewPrompt } from "@/services/aiService";
 import { useToast } from "@/hooks/use-toast";
 import { PromptType } from "@/types/ai";
+import { useAI } from "@/contexts/AIContext";
 
 const Dashboard = () => {
   const { isSignedIn, isLoaded } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isLocalAI } = useAI();
+  
   const [prompt, setPrompt] = useState("");
+  const [inputText, setInputText] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const [enhancedPrompt, setEnhancedPrompt] = useState("");
   const [promptType, setPromptType] = useState<PromptType>("text");
+  const [mode, setMode] = useState<"enhance" | "generate">("enhance");
 
   const handleEnhancePrompt = async () => {
     if (!prompt.trim()) return;
@@ -51,15 +60,17 @@ const Dashboard = () => {
           setEnhancedPrompt(result.enhancedPrompt);
           toast({
             title: "Prompt Enhanced",
-            description: "Your prompt was successfully enhanced using ChatGPT!",
+            description: `Your prompt was successfully enhanced using ${isLocalAI ? 'Smart AI' : 'ChatGPT'}!`,
             variant: "default"
           });
         }
       } else {
         // Fallback for chat tab which isn't implemented yet
-        const basePrompt = prompt.trim();
-        let enhanced = `${basePrompt}\n\nProvide comprehensive, well-structured, and detailed information with specific examples where appropriate. Include relevant context, potential applications, and address potential limitations or considerations. Format the response with clear headings, bullet points for lists, and use concise paragraphs for easy readability.`;
-        setEnhancedPrompt(enhanced);
+        toast({
+          title: "Feature Unavailable",
+          description: "Chat prompt enhancement is coming soon!",
+          variant: "default"
+        });
       }
     } catch (error) {
       console.error("Error enhancing prompt:", error);
@@ -70,6 +81,48 @@ const Dashboard = () => {
       });
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleGeneratePrompt = async () => {
+    if (!inputText.trim()) return;
+    
+    setIsCreating(true);
+    
+    try {
+      if (promptType !== "chat") {
+        const result = await generateNewPrompt(inputText, promptType);
+        
+        if (result.error) {
+          toast({
+            title: "Generation Error",
+            description: result.error,
+            variant: "destructive"
+          });
+        } else {
+          setPrompt(result.generatedPrompt);
+          toast({
+            title: "Prompt Generated",
+            description: "Your prompt was successfully generated!",
+            variant: "default"
+          });
+        }
+      } else {
+        toast({
+          title: "Feature Unavailable",
+          description: "Chat prompt generation is coming soon!",
+          variant: "default"
+        });
+      }
+    } catch (error) {
+      console.error("Error generating prompt:", error);
+      toast({
+        title: "Generation Error",
+        description: "There was an error generating your prompt. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -180,7 +233,7 @@ const Dashboard = () => {
                 <CardTitle className="flex items-center">
                   Create Enhanced Prompts
                   <span className="ml-2 text-xs bg-promptp-purple/20 text-promptp-purple rounded-full px-3 py-1">
-                    Powered by ChatGPT
+                    Powered by Smart AI
                   </span>
                 </CardTitle>
               </CardHeader>
@@ -198,216 +251,474 @@ const Dashboard = () => {
                     <TabsTrigger value="chat">Chat</TabsTrigger>
                   </TabsList>
                   
-                  <TabsContent value="text" className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium">Your Basic Prompt</label>
-                      <Textarea
-                        placeholder="Enter your basic prompt idea here..."
-                        className="min-h-[120px] resize-none mt-2"
-                        value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
-                      />
-                    </div>
-                    
-                    <Button 
-                      className="w-full bg-promptp-purple hover:bg-promptp-deep-purple"
-                      disabled={isGenerating || !prompt.trim()}
-                      onClick={handleEnhancePrompt}
+                  <div className="mb-4">
+                    <Tabs 
+                      value={mode} 
+                      onValueChange={(value) => setMode(value as "enhance" | "generate")}
+                      className="w-full"
                     >
-                      {isGenerating ? (
-                        <span className="flex items-center">
-                          <span className="animate-spin mr-2">⚙️</span>
-                          Enhancing with ChatGPT...
-                        </span>
-                      ) : (
-                        <span className="flex items-center">
-                          <Sparkles className="h-4 w-4 mr-2" />
-                          Enhance Prompt with ChatGPT
-                        </span>
-                      )}
-                    </Button>
-                    
-                    {enhancedPrompt && (
-                      <div className="mt-6">
-                        <label className="text-sm font-medium">Enhanced Prompt</label>
-                        <div className="relative mt-2">
+                      <TabsList className="w-full">
+                        <TabsTrigger value="enhance" className="flex-1">Enhance Existing Prompt</TabsTrigger>
+                        <TabsTrigger value="generate" className="flex-1">Generate New Prompt</TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                  </div>
+                  
+                  <TabsContent value="text" className="space-y-4">
+                    {mode === "enhance" ? (
+                      <>
+                        <div>
+                          <label className="text-sm font-medium">Your Basic Prompt</label>
                           <Textarea
-                            value={enhancedPrompt}
-                            readOnly
-                            className="min-h-[150px] resize-none bg-gray-50 border-promptp-purple/20"
+                            placeholder="Enter your basic prompt idea here..."
+                            className="min-h-[120px] resize-none mt-2"
+                            value={prompt}
+                            onChange={(e) => setPrompt(e.target.value)}
                           />
-                          <div className="absolute top-2 right-2 flex space-x-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => navigator.clipboard.writeText(enhancedPrompt)}
-                              className="text-xs bg-white/80 backdrop-blur-sm"
-                            >
-                              Copy
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="text-xs bg-white/80 backdrop-blur-sm"
-                            >
-                              Save
-                            </Button>
-                          </div>
                         </div>
                         
-                        <div className="flex justify-between mt-4">
-                          <Button variant="outline" size="sm" className="text-xs">
-                            <Lightbulb className="h-3 w-3 mr-1" />
-                            Suggest Improvements
-                          </Button>
-                          <Button variant="outline" size="sm" className="text-xs">
-                            <Plus className="h-3 w-3 mr-1" />
-                            Add to Collection
-                          </Button>
+                        <Button 
+                          className="w-full bg-promptp-purple hover:bg-promptp-deep-purple"
+                          disabled={isGenerating || !prompt.trim()}
+                          onClick={handleEnhancePrompt}
+                        >
+                          {isGenerating ? (
+                            <span className="flex items-center">
+                              <span className="animate-spin mr-2">⚙️</span>
+                              Enhancing with Smart AI...
+                            </span>
+                          ) : (
+                            <span className="flex items-center">
+                              <Sparkles className="h-4 w-4 mr-2" />
+                              Enhance Prompt with Smart AI
+                            </span>
+                          )}
+                        </Button>
+                        
+                        {enhancedPrompt && (
+                          <div className="mt-6">
+                            <label className="text-sm font-medium">Enhanced Prompt</label>
+                            <div className="relative mt-2">
+                              <Textarea
+                                value={enhancedPrompt}
+                                readOnly
+                                className="min-h-[150px] resize-none bg-gray-50 border-promptp-purple/20"
+                              />
+                              <div className="absolute top-2 right-2 flex space-x-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => navigator.clipboard.writeText(enhancedPrompt)}
+                                  className="text-xs bg-white/80 backdrop-blur-sm"
+                                >
+                                  Copy
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  className="text-xs bg-white/80 backdrop-blur-sm"
+                                >
+                                  Save
+                                </Button>
+                              </div>
+                            </div>
+                            
+                            <div className="flex justify-between mt-4">
+                              <Button variant="outline" size="sm" className="text-xs">
+                                <Lightbulb className="h-3 w-3 mr-1" />
+                                Suggest Improvements
+                              </Button>
+                              <Button variant="outline" size="sm" className="text-xs">
+                                <Plus className="h-3 w-3 mr-1" />
+                                Add to Collection
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <Label htmlFor="inputText">What would you like a prompt about?</Label>
+                          <Input
+                            id="inputText"
+                            placeholder="E.g., Benefits of meditation, comparing cloud providers, etc."
+                            className="mt-2"
+                            value={inputText}
+                            onChange={(e) => setInputText(e.target.value)}
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Provide a brief topic or idea, and we'll create a detailed prompt for you
+                          </p>
                         </div>
-                      </div>
+                        
+                        <Button 
+                          className="w-full bg-promptp-purple hover:bg-promptp-deep-purple"
+                          disabled={isCreating || !inputText.trim()}
+                          onClick={handleGeneratePrompt}
+                        >
+                          {isCreating ? (
+                            <span className="flex items-center">
+                              <span className="animate-spin mr-2">⚙️</span>
+                              Generating prompt...
+                            </span>
+                          ) : (
+                            <span className="flex items-center">
+                              <Wand className="h-4 w-4 mr-2" />
+                              Generate Complete Prompt
+                            </span>
+                          )}
+                        </Button>
+                        
+                        {prompt && mode === "generate" && (
+                          <div className="mt-6">
+                            <label className="text-sm font-medium">Generated Prompt</label>
+                            <div className="relative mt-2">
+                              <Textarea
+                                value={prompt}
+                                onChange={(e) => setPrompt(e.target.value)}
+                                className="min-h-[150px] resize-none bg-gray-50 border-promptp-purple/20"
+                              />
+                              <div className="absolute top-2 right-2 flex space-x-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => navigator.clipboard.writeText(prompt)}
+                                  className="text-xs bg-white/80 backdrop-blur-sm"
+                                >
+                                  Copy
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  className="text-xs bg-white/80 backdrop-blur-sm"
+                                >
+                                  Save
+                                </Button>
+                              </div>
+                            </div>
+                            
+                            <div className="flex justify-between mt-4">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="text-xs"
+                                onClick={() => {
+                                  setMode("enhance");
+                                  handleEnhancePrompt();
+                                }}
+                              >
+                                <Sparkles className="h-3 w-3 mr-1" />
+                                Further Enhance This Prompt
+                              </Button>
+                              <Button variant="outline" size="sm" className="text-xs">
+                                <Plus className="h-3 w-3 mr-1" />
+                                Add to Collection
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
                   </TabsContent>
                   
                   <TabsContent value="image" className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium">Your Basic Prompt</label>
-                      <Textarea
-                        placeholder="Describe the image you want to generate..."
-                        className="min-h-[120px] resize-none mt-2"
-                        value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
-                      />
-                    </div>
-                    
-                    <Button 
-                      className="w-full bg-promptp-purple hover:bg-promptp-deep-purple"
-                      disabled={isGenerating || !prompt.trim()}
-                      onClick={handleEnhancePrompt}
-                    >
-                      {isGenerating ? (
-                        <span className="flex items-center">
-                          <span className="animate-spin mr-2">⚙️</span>
-                          Enhancing with ChatGPT...
-                        </span>
-                      ) : (
-                        <span className="flex items-center">
-                          <Sparkles className="h-4 w-4 mr-2" />
-                          Enhance Image Prompt
-                        </span>
-                      )}
-                    </Button>
-                    
-                    {enhancedPrompt && (
-                      <div className="mt-6">
-                        <label className="text-sm font-medium">Enhanced Image Prompt</label>
-                        <div className="relative mt-2">
+                    {mode === "enhance" ? (
+                      <>
+                        <div>
+                          <label className="text-sm font-medium">Your Basic Prompt</label>
                           <Textarea
-                            value={enhancedPrompt}
-                            readOnly
-                            className="min-h-[150px] resize-none bg-gray-50 border-promptp-purple/20"
+                            placeholder="Describe the image you want to generate..."
+                            className="min-h-[120px] resize-none mt-2"
+                            value={prompt}
+                            onChange={(e) => setPrompt(e.target.value)}
                           />
-                          <div className="absolute top-2 right-2 flex space-x-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => navigator.clipboard.writeText(enhancedPrompt)}
-                              className="text-xs bg-white/80 backdrop-blur-sm"
-                            >
-                              Copy
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="text-xs bg-white/80 backdrop-blur-sm"
-                            >
-                              Save
-                            </Button>
-                          </div>
                         </div>
                         
-                        <div className="flex justify-between mt-4">
-                          <Button variant="outline" size="sm" className="text-xs">
-                            <Lightbulb className="h-3 w-3 mr-1" />
-                            Suggest Improvements
-                          </Button>
-                          <Button variant="outline" size="sm" className="text-xs">
-                            <Plus className="h-3 w-3 mr-1" />
-                            Add to Collection
-                          </Button>
+                        <Button 
+                          className="w-full bg-promptp-purple hover:bg-promptp-deep-purple"
+                          disabled={isGenerating || !prompt.trim()}
+                          onClick={handleEnhancePrompt}
+                        >
+                          {isGenerating ? (
+                            <span className="flex items-center">
+                              <span className="animate-spin mr-2">⚙️</span>
+                              Enhancing with Smart AI...
+                            </span>
+                          ) : (
+                            <span className="flex items-center">
+                              <Sparkles className="h-4 w-4 mr-2" />
+                              Enhance Image Prompt
+                            </span>
+                          )}
+                        </Button>
+                        
+                        {enhancedPrompt && (
+                          <div className="mt-6">
+                            <label className="text-sm font-medium">Enhanced Image Prompt</label>
+                            <div className="relative mt-2">
+                              <Textarea
+                                value={enhancedPrompt}
+                                readOnly
+                                className="min-h-[150px] resize-none bg-gray-50 border-promptp-purple/20"
+                              />
+                              <div className="absolute top-2 right-2 flex space-x-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => navigator.clipboard.writeText(enhancedPrompt)}
+                                  className="text-xs bg-white/80 backdrop-blur-sm"
+                                >
+                                  Copy
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  className="text-xs bg-white/80 backdrop-blur-sm"
+                                >
+                                  Save
+                                </Button>
+                              </div>
+                            </div>
+                            
+                            <div className="flex justify-between mt-4">
+                              <Button variant="outline" size="sm" className="text-xs">
+                                <Lightbulb className="h-3 w-3 mr-1" />
+                                Suggest Improvements
+                              </Button>
+                              <Button variant="outline" size="sm" className="text-xs">
+                                <Plus className="h-3 w-3 mr-1" />
+                                Add to Collection
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <Label htmlFor="imageInputText">What image would you like to create?</Label>
+                          <Input
+                            id="imageInputText"
+                            placeholder="E.g., futuristic city, portrait of a warrior, etc."
+                            className="mt-2"
+                            value={inputText}
+                            onChange={(e) => setInputText(e.target.value)}
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Describe the subject or scene, and we'll create a detailed image prompt
+                          </p>
                         </div>
-                      </div>
+                        
+                        <Button 
+                          className="w-full bg-promptp-purple hover:bg-promptp-deep-purple"
+                          disabled={isCreating || !inputText.trim()}
+                          onClick={handleGeneratePrompt}
+                        >
+                          {isCreating ? (
+                            <span className="flex items-center">
+                              <span className="animate-spin mr-2">⚙️</span>
+                              Generating image prompt...
+                            </span>
+                          ) : (
+                            <span className="flex items-center">
+                              <Wand className="h-4 w-4 mr-2" />
+                              Generate Image Prompt
+                            </span>
+                          )}
+                        </Button>
+                        
+                        {enhancedPrompt && (
+                          <div className="mt-6">
+                            <label className="text-sm font-medium">Enhanced Image Prompt</label>
+                            <div className="relative mt-2">
+                              <Textarea
+                                value={enhancedPrompt}
+                                readOnly
+                                className="min-h-[150px] resize-none bg-gray-50 border-promptp-purple/20"
+                              />
+                              <div className="absolute top-2 right-2 flex space-x-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => navigator.clipboard.writeText(enhancedPrompt)}
+                                  className="text-xs bg-white/80 backdrop-blur-sm"
+                                >
+                                  Copy
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  className="text-xs bg-white/80 backdrop-blur-sm"
+                                >
+                                  Save
+                                </Button>
+                              </div>
+                            </div>
+                            
+                            <div className="flex justify-between mt-4">
+                              <Button variant="outline" size="sm" className="text-xs">
+                                <Lightbulb className="h-3 w-3 mr-1" />
+                                Suggest Improvements
+                              </Button>
+                              <Button variant="outline" size="sm" className="text-xs">
+                                <Plus className="h-3 w-3 mr-1" />
+                                Add to Collection
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
                   </TabsContent>
                   
                   <TabsContent value="code" className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium">Your Basic Code Prompt</label>
-                      <Textarea
-                        placeholder="Describe the code you want to generate..."
-                        className="min-h-[120px] resize-none mt-2"
-                        value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
-                      />
-                    </div>
-                    
-                    <Button 
-                      className="w-full bg-promptp-purple hover:bg-promptp-deep-purple"
-                      disabled={isGenerating || !prompt.trim()}
-                      onClick={handleEnhancePrompt}
-                    >
-                      {isGenerating ? (
-                        <span className="flex items-center">
-                          <span className="animate-spin mr-2">⚙️</span>
-                          Enhancing with ChatGPT...
-                        </span>
-                      ) : (
-                        <span className="flex items-center">
-                          <Sparkles className="h-4 w-4 mr-2" />
-                          Enhance Code Prompt
-                        </span>
-                      )}
-                    </Button>
-                    
-                    {enhancedPrompt && (
-                      <div className="mt-6">
-                        <label className="text-sm font-medium">Enhanced Code Prompt</label>
-                        <div className="relative mt-2">
+                    {mode === "enhance" ? (
+                      <>
+                        <div>
+                          <label className="text-sm font-medium">Your Basic Code Prompt</label>
                           <Textarea
-                            value={enhancedPrompt}
-                            readOnly
-                            className="min-h-[150px] resize-none bg-gray-50 border-promptp-purple/20"
+                            placeholder="Describe the code you want to generate..."
+                            className="min-h-[120px] resize-none mt-2"
+                            value={prompt}
+                            onChange={(e) => setPrompt(e.target.value)}
                           />
-                          <div className="absolute top-2 right-2 flex space-x-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => navigator.clipboard.writeText(enhancedPrompt)}
-                              className="text-xs bg-white/80 backdrop-blur-sm"
-                            >
-                              Copy
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="text-xs bg-white/80 backdrop-blur-sm"
-                            >
-                              Save
-                            </Button>
-                          </div>
                         </div>
                         
-                        <div className="flex justify-between mt-4">
-                          <Button variant="outline" size="sm" className="text-xs">
-                            <Lightbulb className="h-3 w-3 mr-1" />
-                            Suggest Improvements
-                          </Button>
-                          <Button variant="outline" size="sm" className="text-xs">
-                            <Plus className="h-3 w-3 mr-1" />
-                            Add to Collection
-                          </Button>
+                        <Button 
+                          className="w-full bg-promptp-purple hover:bg-promptp-deep-purple"
+                          disabled={isGenerating || !prompt.trim()}
+                          onClick={handleEnhancePrompt}
+                        >
+                          {isGenerating ? (
+                            <span className="flex items-center">
+                              <span className="animate-spin mr-2">⚙️</span>
+                              Enhancing with Smart AI...
+                            </span>
+                          ) : (
+                            <span className="flex items-center">
+                              <Sparkles className="h-4 w-4 mr-2" />
+                              Enhance Code Prompt
+                            </span>
+                          )}
+                        </Button>
+                        
+                        {enhancedPrompt && (
+                          <div className="mt-6">
+                            <label className="text-sm font-medium">Enhanced Code Prompt</label>
+                            <div className="relative mt-2">
+                              <Textarea
+                                value={enhancedPrompt}
+                                readOnly
+                                className="min-h-[150px] resize-none bg-gray-50 border-promptp-purple/20"
+                              />
+                              <div className="absolute top-2 right-2 flex space-x-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => navigator.clipboard.writeText(enhancedPrompt)}
+                                  className="text-xs bg-white/80 backdrop-blur-sm"
+                                >
+                                  Copy
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  className="text-xs bg-white/80 backdrop-blur-sm"
+                                >
+                                  Save
+                                </Button>
+                              </div>
+                            </div>
+                            
+                            <div className="flex justify-between mt-4">
+                              <Button variant="outline" size="sm" className="text-xs">
+                                <Lightbulb className="h-3 w-3 mr-1" />
+                                Suggest Improvements
+                              </Button>
+                              <Button variant="outline" size="sm" className="text-xs">
+                                <Plus className="h-3 w-3 mr-1" />
+                                Add to Collection
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <Label htmlFor="codeInputText">What code would you like to create?</Label>
+                          <Input
+                            id="codeInputText"
+                            placeholder="E.g., user authentication system, data visualization, etc."
+                            className="mt-2"
+                            value={inputText}
+                            onChange={(e) => setInputText(e.target.value)}
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Describe the functionality needed, and we'll create a detailed code prompt
+                          </p>
                         </div>
-                      </div>
+                        
+                        <Button 
+                          className="w-full bg-promptp-purple hover:bg-promptp-deep-purple"
+                          disabled={isCreating || !inputText.trim()}
+                          onClick={handleGeneratePrompt}
+                        >
+                          {isCreating ? (
+                            <span className="flex items-center">
+                              <span className="animate-spin mr-2">⚙️</span>
+                              Generating code prompt...
+                            </span>
+                          ) : (
+                            <span className="flex items-center">
+                              <Wand className="h-4 w-4 mr-2" />
+                              Generate Code Prompt
+                            </span>
+                          )}
+                        </Button>
+                        
+                        {enhancedPrompt && (
+                          <div className="mt-6">
+                            <label className="text-sm font-medium">Enhanced Code Prompt</label>
+                            <div className="relative mt-2">
+                              <Textarea
+                                value={enhancedPrompt}
+                                readOnly
+                                className="min-h-[150px] resize-none bg-gray-50 border-promptp-purple/20"
+                              />
+                              <div className="absolute top-2 right-2 flex space-x-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => navigator.clipboard.writeText(enhancedPrompt)}
+                                  className="text-xs bg-white/80 backdrop-blur-sm"
+                                >
+                                  Copy
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  className="text-xs bg-white/80 backdrop-blur-sm"
+                                >
+                                  Save
+                                </Button>
+                              </div>
+                            </div>
+                            
+                            <div className="flex justify-between mt-4">
+                              <Button variant="outline" size="sm" className="text-xs">
+                                <Lightbulb className="h-3 w-3 mr-1" />
+                                Suggest Improvements
+                              </Button>
+                              <Button variant="outline" size="sm" className="text-xs">
+                                <Plus className="h-3 w-3 mr-1" />
+                                Add to Collection
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
                   </TabsContent>
                   

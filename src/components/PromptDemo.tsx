@@ -6,11 +6,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Copy, Wand } from "lucide-react";
+import { enhancePrompt } from "@/services/aiService";
 
 const PromptDemo = () => {
   const navigate = useNavigate();
   const [demoType, setDemoType] = useState<"text" | "image" | "code">("image");
   const [isEnhancing, setIsEnhancing] = useState(false);
+  const [userPrompt, setUserPrompt] = useState("");
+  const [enhancedUserPrompt, setEnhancedUserPrompt] = useState("");
+  const [showCustomDemo, setShowCustomDemo] = useState(false);
   
   const textInputPrompt = "Write about the benefits of AI in content creation";
   const textEnhancedPrompt = `Write a comprehensive analysis of how AI technologies are transforming content creation across different industries. Include specific examples of AI tools currently being used by content creators, quantifiable benefits regarding time savings and quality improvements, potential limitations or ethical concerns, and predictions for how the relationship between AI and human creators will evolve over the next 5 years. Format the response with clear headings, bullet points for key benefits, and provide actionable takeaways for content creators looking to effectively incorporate AI into their workflows.`;
@@ -31,11 +35,21 @@ const PromptDemo = () => {
 
 The function should follow modern JavaScript best practices and be usable in both Node.js and browser environments.`;
 
-  const handleEnhance = () => {
+  const handleEnhance = async () => {
+    if (!userPrompt.trim()) return;
+    
     setIsEnhancing(true);
-    setTimeout(() => {
+    try {
+      const result = await enhancePrompt(userPrompt, demoType);
+      if (!result.error) {
+        setEnhancedUserPrompt(result.enhancedPrompt);
+        setShowCustomDemo(true);
+      }
+    } catch (error) {
+      console.error("Error enhancing prompt:", error);
+    } finally {
       setIsEnhancing(false);
-    }, 1500);
+    }
   };
 
   const copyToClipboard = (text: string) => {
@@ -57,7 +71,12 @@ The function should follow modern JavaScript best practices and be usable in bot
         <Tabs 
           defaultValue="image" 
           value={demoType}
-          onValueChange={(value) => setDemoType(value as "text" | "image" | "code")}
+          onValueChange={(value) => {
+            setDemoType(value as "text" | "image" | "code");
+            setShowCustomDemo(false);
+            setUserPrompt("");
+            setEnhancedUserPrompt("");
+          }}
           className="max-w-5xl mx-auto"
         >
           <div className="flex justify-center mb-8">
@@ -68,104 +87,182 @@ The function should follow modern JavaScript best practices and be usable in bot
             </TabsList>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Before */}
-            <Card className="border border-gray-200 shadow-sm">
-              <CardContent className="pt-6">
-                <div className="mb-4 flex items-center">
-                  <div className="bg-gray-200 text-gray-600 rounded-full px-4 py-1 text-sm font-medium">
-                    Before: Basic Prompt
+          {!showCustomDemo ? (
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* Before */}
+              <Card className="border border-gray-200 shadow-sm">
+                <CardContent className="pt-6">
+                  <div className="mb-4 flex items-center">
+                    <div className="bg-gray-200 text-gray-600 rounded-full px-4 py-1 text-sm font-medium">
+                      Before: Basic Prompt
+                    </div>
                   </div>
-                </div>
-                <Textarea
-                  value={
-                    demoType === "text" 
-                      ? textInputPrompt 
-                      : demoType === "image" 
-                        ? imageInputPrompt 
-                        : codeInputPrompt
-                  }
-                  readOnly
-                  className="min-h-[150px] resize-none mb-4"
-                />
-                <div className="flex justify-end">
-                  <Button 
-                    variant="outline" 
-                    className="text-gray-500"
-                    onClick={() => 
-                      copyToClipboard(
-                        demoType === "text" 
-                          ? textInputPrompt 
-                          : demoType === "image" 
-                            ? imageInputPrompt 
-                            : codeInputPrompt
-                      )
+                  <Textarea
+                    value={
+                      demoType === "text" 
+                        ? textInputPrompt 
+                        : demoType === "image" 
+                          ? imageInputPrompt 
+                          : codeInputPrompt
                     }
-                  >
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copy Basic Prompt
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                    readOnly
+                    className="min-h-[150px] resize-none mb-4"
+                  />
+                  <div className="flex justify-end">
+                    <Button 
+                      variant="outline" 
+                      className="text-gray-500"
+                      onClick={() => 
+                        copyToClipboard(
+                          demoType === "text" 
+                            ? textInputPrompt 
+                            : demoType === "image" 
+                              ? imageInputPrompt 
+                              : codeInputPrompt
+                        )
+                      }
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copy Basic Prompt
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
 
-            {/* After */}
-            <Card className="border border-promptp-purple/30 shadow-md">
-              <CardContent className="pt-6">
-                <div className="mb-4 flex items-center">
-                  <div className="bg-promptp-purple/20 text-promptp-purple rounded-full px-4 py-1 text-sm font-medium">
-                    After: PromptP Enhancement
+              {/* After */}
+              <Card className="border border-promptp-purple/30 shadow-md">
+                <CardContent className="pt-6">
+                  <div className="mb-4 flex items-center">
+                    <div className="bg-promptp-purple/20 text-promptp-purple rounded-full px-4 py-1 text-sm font-medium">
+                      After: PromptP Enhancement
+                    </div>
                   </div>
-                </div>
-                <Textarea
-                  value={
-                    demoType === "text" 
-                      ? textEnhancedPrompt 
-                      : demoType === "image" 
-                        ? imageEnhancedPrompt 
-                        : codeEnhancedPrompt
-                  }
-                  readOnly
-                  className="min-h-[150px] resize-none mb-4 bg-gray-50 border-promptp-purple/20"
-                />
-                <div className="flex justify-between">
-                  <Button 
-                    variant="outline" 
-                    className="text-gray-500"
-                    onClick={() => 
-                      copyToClipboard(
-                        demoType === "text" 
-                          ? textEnhancedPrompt 
-                          : demoType === "image" 
-                            ? imageEnhancedPrompt 
-                            : codeEnhancedPrompt
-                      )
+                  <Textarea
+                    value={
+                      demoType === "text" 
+                        ? textEnhancedPrompt 
+                        : demoType === "image" 
+                          ? imageEnhancedPrompt 
+                          : codeEnhancedPrompt
                     }
-                  >
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copy Enhanced Prompt
-                  </Button>
-                  <Button 
-                    className="bg-promptp-purple hover:bg-promptp-deep-purple text-white"
-                    disabled={isEnhancing}
-                    onClick={handleEnhance}
-                  >
-                    {isEnhancing ? (
-                      <span className="flex items-center">
-                        <span className="animate-spin mr-2">⚙️</span>
-                        Enhancing...
-                      </span>
-                    ) : (
+                    readOnly
+                    className="min-h-[150px] resize-none mb-4 bg-gray-50 border-promptp-purple/20"
+                  />
+                  <div className="flex justify-between">
+                    <Button 
+                      variant="outline" 
+                      className="text-gray-500"
+                      onClick={() => 
+                        copyToClipboard(
+                          demoType === "text" 
+                            ? textEnhancedPrompt 
+                            : demoType === "image" 
+                              ? imageEnhancedPrompt 
+                              : codeEnhancedPrompt
+                        )
+                      }
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copy Enhanced Prompt
+                    </Button>
+                    <Button 
+                      className="bg-promptp-purple hover:bg-promptp-deep-purple text-white"
+                      onClick={() => setShowCustomDemo(true)}
+                    >
                       <span className="flex items-center">
                         <Wand className="h-4 w-4 mr-2" />
-                        Enhance Your Own
+                        Try With Your Own Prompt
                       </span>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* User Input */}
+              <Card className="border border-gray-200 shadow-sm">
+                <CardContent className="pt-6">
+                  <div className="mb-4 flex items-center">
+                    <div className="bg-gray-200 text-gray-600 rounded-full px-4 py-1 text-sm font-medium">
+                      Your Basic Prompt
+                    </div>
+                  </div>
+                  <Textarea
+                    value={userPrompt}
+                    onChange={(e) => setUserPrompt(e.target.value)}
+                    placeholder={
+                      demoType === "text" 
+                        ? "Write a blog post about productivity tips" 
+                        : demoType === "image" 
+                          ? "Create an image of a fantasy landscape" 
+                          : "Write a function to sort an array"
+                    }
+                    className="min-h-[150px] resize-none mb-4"
+                  />
+                  <div className="flex justify-between">
+                    <Button 
+                      variant="outline" 
+                      className="text-gray-500"
+                      onClick={() => {
+                        setShowCustomDemo(false);
+                        setUserPrompt("");
+                        setEnhancedUserPrompt("");
+                      }}
+                    >
+                      Back to Demo
+                    </Button>
+                    <Button 
+                      className="bg-promptp-purple hover:bg-promptp-deep-purple text-white"
+                      disabled={isEnhancing || !userPrompt.trim()}
+                      onClick={handleEnhance}
+                    >
+                      {isEnhancing ? (
+                        <span className="flex items-center">
+                          <span className="animate-spin mr-2">⚙️</span>
+                          Enhancing...
+                        </span>
+                      ) : (
+                        <span className="flex items-center">
+                          <Wand className="h-4 w-4 mr-2" />
+                          Enhance Prompt
+                        </span>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Enhanced User Prompt */}
+              <Card className="border border-promptp-purple/30 shadow-md">
+                <CardContent className="pt-6">
+                  <div className="mb-4 flex items-center">
+                    <div className="bg-promptp-purple/20 text-promptp-purple rounded-full px-4 py-1 text-sm font-medium">
+                      Your Enhanced Prompt
+                    </div>
+                  </div>
+                  <Textarea
+                    value={enhancedUserPrompt}
+                    readOnly
+                    placeholder="Your enhanced prompt will appear here..."
+                    className="min-h-[150px] resize-none mb-4 bg-gray-50 border-promptp-purple/20"
+                  />
+                  <div className="flex justify-end">
+                    {enhancedUserPrompt && (
+                      <Button 
+                        variant="outline" 
+                        className="text-gray-500"
+                        onClick={() => copyToClipboard(enhancedUserPrompt)}
+                      >
+                        <Copy className="h-4 w-4 mr-2" />
+                        Copy Enhanced Prompt
+                      </Button>
                     )}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           <div className="mt-12 text-center">
             <p className="text-gray-600 italic mb-4">
