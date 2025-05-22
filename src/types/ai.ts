@@ -1,4 +1,3 @@
-
 export type PromptType = "text" | "image" | "code" | "chat";
 
 export interface EnhancedPrompt {

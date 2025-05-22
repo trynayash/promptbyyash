@@ -1,3 +1,4 @@
+
 /**
  * PromptP Proprietary AI Service
  * Complete local implementation without external API dependencies
@@ -200,9 +201,9 @@ export const rewritePrompt = (
       }
     };
   } catch (error) {
-    console.error("Error rewriting prompt:", error);
+    console.error('Error rewriting prompt:', error);
     return { 
-      result: request.input, // Fixed: Using request.input instead of input
+      result: request.input,
       error: `Error rewriting prompt: ${(error as Error).message}` 
     };
   }
