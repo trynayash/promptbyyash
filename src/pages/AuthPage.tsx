@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,20 +9,39 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { FcGoogle } from "react-icons/fc";
+import { Loader2 } from "lucide-react";
 
 const AuthPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const { signIn, signUp, signInWithGoogle, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const defaultTab = searchParams.get('tab') || 'signin';
 
   // Redirect if already logged in
-  if (user) {
-    navigate("/dashboard");
-    return null;
-  }
+  useEffect(() => {
+    if (user) {
+      navigate("/dashboard");
+    }
+  }, [user, navigate]);
+
+  // Check for auth error in URL
+  useEffect(() => {
+    const error = searchParams.get('error');
+    const errorDescription = searchParams.get('error_description');
+    
+    if (error) {
+      toast({
+        title: "Authentication Error",
+        description: errorDescription || error,
+        variant: "destructive",
+      });
+    }
+  }, [searchParams, toast]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,13 +50,7 @@ const AuthPage = () => {
     try {
       const { error } = await signIn(email, password);
       
-      if (error) {
-        toast({
-          title: "Error signing in",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
+      if (!error) {
         toast({
           title: "Welcome back!",
           description: "You've successfully signed in.",
@@ -62,13 +75,7 @@ const AuthPage = () => {
     try {
       const { error, user } = await signUp(email, password);
       
-      if (error) {
-        toast({
-          title: "Error signing up",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
+      if (!error) {
         toast({
           title: "Account created",
           description: "Please check your email for verification instructions.",
@@ -87,16 +94,25 @@ const AuthPage = () => {
   };
 
   const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
     try {
       await signInWithGoogle();
+      // No immediate toast/redirect here as we'll be redirected to Google
     } catch (error: any) {
       toast({
         title: "Error with Google sign in",
         description: error.message || "An unexpected error occurred",
         variant: "destructive",
       });
+    } finally {
+      // Set timeout to reset loading state in case the redirect doesn't happen
+      setTimeout(() => setGoogleLoading(false), 5000);
     }
   };
+
+  if (user) {
+    return null; // Render nothing while redirecting
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center pt-16 pb-10 px-4">
@@ -114,7 +130,7 @@ const AuthPage = () => {
             <CardDescription>Sign in or create a new account to continue</CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="signin" className="w-full">
+            <Tabs defaultValue={defaultTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
@@ -149,7 +165,12 @@ const AuthPage = () => {
                     className="w-full bg-promptp-purple hover:bg-promptp-deep-purple"
                     disabled={isLoading}
                   >
-                    {isLoading ? "Signing in..." : "Sign In"}
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Signing in...
+                      </>
+                    ) : "Sign In"}
                   </Button>
                 </form>
               </TabsContent>
@@ -184,7 +205,12 @@ const AuthPage = () => {
                     className="w-full bg-promptp-purple hover:bg-promptp-deep-purple"
                     disabled={isLoading}
                   >
-                    {isLoading ? "Creating account..." : "Create Account"}
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating account...
+                      </>
+                    ) : "Create Account"}
                   </Button>
                 </form>
               </TabsContent>
@@ -203,9 +229,19 @@ const AuthPage = () => {
                 type="button"
                 className="w-full"
                 onClick={handleGoogleSignIn}
+                disabled={googleLoading}
               >
-                <FcGoogle className="mr-2 h-5 w-5" />
-                Google
+                {googleLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Connecting to Google...
+                  </>
+                ) : (
+                  <>
+                    <FcGoogle className="mr-2 h-5 w-5" />
+                    Google
+                  </>
+                )}
               </Button>
             </Tabs>
           </CardContent>
