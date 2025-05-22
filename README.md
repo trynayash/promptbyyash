@@ -20,7 +20,7 @@ A powerful and intuitive prompt management system built with modern web technolo
 
 ```sh
 # Clone the repository
-git clone https://github.com/trynayash/PromptP.git
+git clone https://github.com/trynayash/Promptbyyash.git
 
 # Navigate to project directory
 cd PromptP
