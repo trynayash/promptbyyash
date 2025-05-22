@@ -80,10 +80,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signInWithGoogle = async () => {
     try {
       console.log("Starting Google sign-in process...");
+      
+      // Get the current origin for proper redirect handling
+      const origin = window.location.origin;
+      console.log("Current origin:", origin);
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth`,
+          redirectTo: `${origin}/auth`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -103,6 +108,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (data?.url) {
         console.log("Redirecting to Google OAuth:", data.url);
+        // Use window.location.href instead of a direct redirect
+        window.location.href = data.url;
       } else {
         console.error("No redirect URL provided from Supabase");
         toast({

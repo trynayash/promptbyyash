@@ -9,13 +9,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { FcGoogle } from "react-icons/fc";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const AuthPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
   const { signIn, signUp, signInWithGoogle, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -35,6 +37,7 @@ const AuthPage = () => {
     const errorDescription = searchParams.get('error_description');
     
     if (error) {
+      setAuthError(`${error}${errorDescription ? ': ' + errorDescription : ''}`);
       toast({
         title: "Authentication Error",
         description: errorDescription || error,
@@ -46,6 +49,7 @@ const AuthPage = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setAuthError(null);
     
     try {
       const { error } = await signIn(email, password);
@@ -58,6 +62,7 @@ const AuthPage = () => {
         navigate("/dashboard");
       }
     } catch (error: any) {
+      setAuthError(error.message || "An unexpected error occurred");
       toast({
         title: "Error",
         description: error.message || "An unexpected error occurred",
@@ -71,6 +76,7 @@ const AuthPage = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setAuthError(null);
     
     try {
       const { error, user } = await signUp(email, password);
@@ -83,6 +89,7 @@ const AuthPage = () => {
         // No immediate redirect as user needs to verify email first
       }
     } catch (error: any) {
+      setAuthError(error.message || "An unexpected error occurred");
       toast({
         title: "Error",
         description: error.message || "An unexpected error occurred",
@@ -95,10 +102,12 @@ const AuthPage = () => {
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
+    setAuthError(null);
     try {
       await signInWithGoogle();
       // No immediate toast/redirect here as we'll be redirected to Google
     } catch (error: any) {
+      setAuthError(error.message || "An unexpected error with Google sign in");
       toast({
         title: "Error with Google sign in",
         description: error.message || "An unexpected error occurred",
@@ -130,6 +139,16 @@ const AuthPage = () => {
             <CardDescription>Sign in or create a new account to continue</CardDescription>
           </CardHeader>
           <CardContent>
+            {authError && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Authentication Error</AlertTitle>
+                <AlertDescription>
+                  {authError}
+                </AlertDescription>
+              </Alert>
+            )}
+            
             <Tabs defaultValue={defaultTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
