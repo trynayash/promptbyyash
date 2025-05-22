@@ -11,14 +11,21 @@ import { useAuth } from "@/contexts/AuthContext";
 import { FcGoogle } from "react-icons/fc";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
 
 const AuthPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
-  const { signIn, signUp, signInWithGoogle, user } = useAuth();
+  const [showGoogleErrorHelp, setShowGoogleErrorHelp] = useState(false);
+  const { signIn, signUp, signInWithGoogle, user, authError, setAuthError } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -37,14 +44,15 @@ const AuthPage = () => {
     const errorDescription = searchParams.get('error_description');
     
     if (error) {
-      setAuthError(`${error}${errorDescription ? ': ' + errorDescription : ''}`);
+      const errorMessage = `${error}${errorDescription ? ': ' + errorDescription : ''}`;
+      setAuthError(errorMessage);
       toast({
         title: "Authentication Error",
         description: errorDescription || error,
         variant: "destructive",
       });
     }
-  }, [searchParams, toast]);
+  }, [searchParams, toast, setAuthError]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,8 +151,18 @@ const AuthPage = () => {
               <Alert variant="destructive" className="mb-6">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Authentication Error</AlertTitle>
-                <AlertDescription>
+                <AlertDescription className="flex flex-col gap-2">
                   {authError}
+                  {authError.includes("403") && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setShowGoogleErrorHelp(true)}
+                      className="self-start mt-1"
+                    >
+                      How to fix this?
+                    </Button>
+                  )}
                 </AlertDescription>
               </Alert>
             )}
@@ -269,6 +287,68 @@ const AuthPage = () => {
           </CardFooter>
         </Card>
       </div>
+
+      {/* Google Auth Error Help Dialog */}
+      <Dialog open={showGoogleErrorHelp} onOpenChange={setShowGoogleErrorHelp}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>How to Fix Google Authentication</DialogTitle>
+            <DialogDescription>
+              The 403 error occurs when Google's OAuth configuration does not match your application.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <h3 className="font-medium">Step 1: Check Google Cloud Console</h3>
+              <p className="text-sm text-muted-foreground">
+                Open Google Cloud Console and select your project.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <h3 className="font-medium">Step 2: Verify OAuth Configuration</h3>
+              <p className="text-sm text-muted-foreground">
+                Go to APIs & Services > Credentials > OAuth 2.0 Client IDs
+              </p>
+            </div>
+            <div className="space-y-2">
+              <h3 className="font-medium">Step 3: Update Redirect URIs</h3>
+              <p className="text-sm text-muted-foreground">
+                Add these URIs to "Authorized redirect URIs":
+                <code className="block bg-gray-100 p-2 mt-1 rounded text-sm">
+                  {window.location.origin}/auth<br />
+                  https://twkqxsbrrwodkgqqfhno.supabase.co/auth/v1/callback
+                </code>
+              </p>
+            </div>
+            <div className="space-y-2">
+              <h3 className="font-medium">Step 4: Update JavaScript Origins</h3>
+              <p className="text-sm text-muted-foreground">
+                Add to "Authorized JavaScript origins":
+                <code className="block bg-gray-100 p-2 mt-1 rounded text-sm">
+                  {window.location.origin}<br />
+                  https://twkqxsbrrwodkgqqfhno.supabase.co
+                </code>
+              </p>
+            </div>
+            <div className="space-y-2">
+              <h3 className="font-medium">Step 5: Update Supabase Configuration</h3>
+              <p className="text-sm text-muted-foreground">
+                In Supabase Dashboard > Authentication > URL Configuration, set:
+                <code className="block bg-gray-100 p-2 mt-1 rounded text-sm">
+                  Site URL: {window.location.origin}<br />
+                  Redirect URLs: {window.location.origin}/auth
+                </code>
+              </p>
+            </div>
+            <Button 
+              className="w-full mt-4" 
+              onClick={() => setShowGoogleErrorHelp(false)}
+            >
+              Got it
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

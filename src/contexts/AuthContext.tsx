@@ -12,6 +12,8 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<{ error: any, user: User | null }>;
   signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  authError: string | null;
+  setAuthError: (error: string | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -20,6 +22,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -44,9 +47,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signIn = async (email: string, password: string) => {
+    setAuthError(null);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       console.error("Sign in error:", error.message);
+      setAuthError(error.message);
       toast({
         title: "Sign in failed",
         description: error.message,
@@ -57,9 +62,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signUp = async (email: string, password: string) => {
+    setAuthError(null);
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) {
       console.error("Sign up error:", error.message);
+      setAuthError(error.message);
       toast({
         title: "Sign up failed",
         description: error.message,
@@ -70,6 +77,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    setAuthError(null);
     await supabase.auth.signOut();
     toast({
       title: "Signed out",
@@ -80,15 +88,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signInWithGoogle = async () => {
     try {
       console.log("Starting Google sign-in process...");
+      setAuthError(null);
       
       // Get the current origin for proper redirect handling
       const origin = window.location.origin;
       console.log("Current origin:", origin);
       
+      // Check if we're in a development environment
+      const redirectTo = origin.includes('localhost') || origin.includes('127.0.0.1')
+        ? `${origin}/auth`
+        : `${origin}/auth`;
+      
+      console.log("Using redirect URL:", redirectTo);
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${origin}/auth`,
+          redirectTo,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -98,6 +114,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (error) {
         console.error("Google sign-in error:", error.message);
+        setAuthError(error.message);
         toast({
           title: "Google sign-in failed",
           description: error.message,
@@ -111,7 +128,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Use window.location.href instead of a direct redirect
         window.location.href = data.url;
       } else {
-        console.error("No redirect URL provided from Supabase");
+        const errorMsg = "No redirect URL provided from Supabase";
+        console.error(errorMsg);
+        setAuthError(errorMsg);
         toast({
           title: "Authentication error",
           description: "Could not initiate Google sign-in",
@@ -119,10 +138,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         });
       }
     } catch (err: any) {
-      console.error("Unexpected error during Google sign-in:", err.message);
+      const errorMsg = err.message || "An unexpected error occurred";
+      console.error("Unexpected error during Google sign-in:", errorMsg);
+      setAuthError(errorMsg);
       toast({
         title: "Authentication error",
-        description: err.message || "An unexpected error occurred",
+        description: errorMsg,
         variant: "destructive",
       });
     }
@@ -135,7 +156,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     signIn,
     signUp,
     signOut,
-    signInWithGoogle
+    signInWithGoogle,
+    authError,
+    setAuthError
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
