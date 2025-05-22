@@ -307,7 +307,7 @@ const AuthPage = () => {
             <div className="space-y-2">
               <h3 className="font-medium">Step 2: Verify OAuth Configuration</h3>
               <p className="text-sm text-muted-foreground">
-                Go to APIs & Services > Credentials > OAuth 2.0 Client IDs
+                Go to APIs & Services {'>'} Credentials {'>'} OAuth 2.0 Client IDs
               </p>
             </div>
             <div className="space-y-2">
@@ -333,7 +333,7 @@ const AuthPage = () => {
             <div className="space-y-2">
               <h3 className="font-medium">Step 5: Update Supabase Configuration</h3>
               <p className="text-sm text-muted-foreground">
-                In Supabase Dashboard > Authentication > URL Configuration, set:
+                In Supabase Dashboard {'>'} Authentication {'>'} URL Configuration, set:
                 <code className="block bg-gray-100 p-2 mt-1 rounded text-sm">
                   Site URL: {window.location.origin}<br />
                   Redirect URLs: {window.location.origin}/auth
